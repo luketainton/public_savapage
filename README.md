@@ -30,6 +30,12 @@ docker compose logs -f app
 
 The Compose deployment always pulls the published `latest` image. The SavaPage version is selected by the repository release process and is not a runtime setting.
 
+On first start, the image copies its built-in SavaPage and CUPS defaults into
+the empty bind-mounted directories. The `SP_SRV_*` settings are then written to
+`server.properties` once. To reapply them to a fresh installation, stop the
+stack and remove the bind-mounted `savapage/` and `db/` data directories before
+starting it again.
+
 ## First login
 
 Open `https://localhost:8632/admin`. The initial credentials are `admin` / `admin`; change the password immediately and complete the setup in the Admin Web App.
@@ -48,6 +54,12 @@ Bind-mounted directories persist application data, CUPS configuration, logs, and
 ./savapage/cups
 ./db
 ```
+
+On NAS platforms with extended shared-folder ACLs, grant the Docker service
+permission to change ownership and modes beneath these directories. If the
+SavaPage log reports `Operation not permitted` while creating a directory under
+`data/internal`, fix the shared-folder ACL or use Docker-managed volumes for
+the application data.
 
 Back up these directories, especially the SavaPage data directory containing:
 
@@ -72,4 +84,4 @@ docker compose up -d
 
 Back up the bind-mounted directories first and consult the SavaPage release notes for database migrations. Tagged releases download and verify the installer automatically in CI.
 
-Do not use `docker compose down -v` unless you intentionally want to remove the persistent application and database volumes.
+Do not remove `savapage/` or `db/` unless you intentionally want to destroy the persistent application and database data.

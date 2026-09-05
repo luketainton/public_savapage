@@ -21,7 +21,15 @@ RUN bash /opt/savapage/savapage-setup.bin -n
 USER root
 RUN /opt/savapage/server/bin/linux-x64/roottasks pam
 
+RUN mkdir -p /opt/savapage/defaults \
+    && cp -a /opt/savapage/server/data /opt/savapage/defaults/data \
+    && cp -a /etc/cups /opt/savapage/defaults/cups
+
+COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+COPY savapage-run.sh /usr/local/bin/savapage-run.sh
 COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
+RUN chmod 755 /usr/local/bin/docker-entrypoint.sh /usr/local/bin/savapage-run.sh
+
 EXPOSE 631 8631 8632 9100
-CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/supervisord.conf"]
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
