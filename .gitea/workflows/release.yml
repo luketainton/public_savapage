@@ -18,6 +18,11 @@ jobs:
           fetch-depth: 0
 
       - name: Download and verify SavaPage installer
+        env:
+          ACTIONS_TOKEN: ${{ secrets.ACTIONS_TOKEN }}
+          GITEA_REPOSITORY: ${{ gitea.repository }}
+          GITEA_SERVER_URL: ${{ gitea.server_url }}
+          RELEASE_TAG: ${{ gitea.ref_name }}
         run: |
           set -eu
           version="$(sed -n 's/^ARG SAVAPAGE_VERSION=//p' Dockerfile)"
@@ -36,6 +41,51 @@ jobs:
           test -n "${expected}"
           actual="$(sha512sum "${installer}" | awk '{ print $1 }')"
           test "${actual}" = "${expected}"
+
+          release_url="${GITEA_SERVER_URL}/api/v1/repos/${GITEA_REPOSITORY}/releases/tags/${RELEASE_TAG}"
+          response_file="$(mktemp)"
+          status="$(curl --silent --show-error --output "${response_file}" \
+            --write-out '%{http_code}' \
+            --header "Authorization: token ${ACTIONS_TOKEN}" \
+            "${release_url}")"
+
+          case "${status}" in
+            200)
+              release_id="$(jq --raw-output '.id' "${response_file}")"
+              current_body="$(jq --raw-output '.body // ""' "${response_file}")"
+              note="SavaPage version: ${version}"
+              new_body="$(printf '%s\n' "${current_body}" | awk -v note="${note}" '
+                BEGIN { found = 0 }
+                index($0, "SavaPage version:") == 1 {
+                  if (!found) { print note; found = 1 }
+                  next
+                }
+                { print }
+                END {
+                  if (!found) {
+                    if (NR > 0) print ""
+                    print note
+                  }
+                }
+              ')"
+              jq -n --arg body "${new_body}" '{body: $body}' > release-payload.json
+              curl --fail --silent --show-error --request PATCH \
+                --header "Authorization: token ${ACTIONS_TOKEN}" \
+                --header 'Content-Type: application/json' \
+                --data @release-payload.json \
+                "${GITEA_SERVER_URL}/api/v1/repos/${GITEA_REPOSITORY}/releases/${release_id}"
+              ;;
+            404)
+              echo "No Gitea Release exists for ${RELEASE_TAG}; skipping release-note update."
+              ;;
+            *)
+              echo "Failed to find Gitea Release for ${RELEASE_TAG} (HTTP ${status})." >&2
+              cat "${response_file}" >&2
+              exit 1
+              ;;
+          esac
+
+          rm -f "${response_file}" release-payload.json
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
