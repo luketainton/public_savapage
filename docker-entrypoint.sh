@@ -48,6 +48,7 @@ if [ ! -e "${CONFIG_MARKER}" ]; then
     done
 
     if [ -s "${properties_tmp}" ]; then
+        touch "${DATA_DIR}/server.properties"
         awk -F= '
             NR == FNR { keys[$1] = 1; next }
             {
