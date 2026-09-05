@@ -1,0 +1,32 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended"],
+  "customManagers": [
+    {
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/^Dockerfile$/"
+      ],
+      "matchStrings": [
+        "ARG SAVAPAGE_VERSION=(?<currentValue>\\d+\\.\\d+\\.\\d+)"
+      ],
+      "depNameTemplate": "savapage",
+      "datasourceTemplate": "custom.savapage",
+      "versioningTemplate": "semver"
+    }
+  ],
+  "customDatasources": {
+    "savapage": {
+      "defaultRegistryUrlTemplate": "https://www.savapage.org/download/sha512sums.txt",
+      "format": "plain"
+    }
+  },
+  "packageRules": [
+    {
+      "matchDatasources": [
+        "custom.savapage"
+      ],
+      "extractVersion": "^.*savapage-setup-(?<version>\\d+\\.\\d+\\.\\d+)-final-linux-x64\\.bin$"
+    }
+  ]
+}
