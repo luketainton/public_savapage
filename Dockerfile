@@ -26,10 +26,11 @@ RUN mkdir -p /opt/savapage/defaults \
     && cp -a /etc/cups /opt/savapage/defaults/cups
 
 COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+COPY cupsd-run.sh /usr/local/bin/cupsd-run.sh
 COPY savapage-run.sh /usr/local/bin/savapage-run.sh
 COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
-RUN chmod 755 /usr/local/bin/docker-entrypoint.sh /usr/local/bin/savapage-run.sh
+RUN chmod 755 /usr/local/bin/docker-entrypoint.sh /usr/local/bin/cupsd-run.sh /usr/local/bin/savapage-run.sh
 
 EXPOSE 631 8631 8632 9100
 ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
