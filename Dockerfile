@@ -1,4 +1,4 @@
-FROM debian:bookworm
+FROM debian:trixie
 
 ARG SAVAPAGE_VERSION=1.7.0
 
